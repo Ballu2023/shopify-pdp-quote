@@ -9,14 +9,21 @@ requests into **draft orders**.
 | | |
 |---|---|
 | Store | https://pranic-drug-store.myshopify.com |
-| Storefront password | `<password>` |
+| Storefront password | shared in the submission email |
 | Normal product (Add to cart) | https://pranic-drug-store.myshopify.com/products/saunf-rusk |
 | Quote-only product | https://pranic-drug-store.myshopify.com/products/saunf-rusk-bulk-order |
-| Video: add to cart flow | `<link>` |
-| Video: quote → draft order | `<link>` |
+| Demo video | Google Drive link in the submission email |
 
 The backend is live, so the quote form can be tested on the quote-only product.
-Draft orders are only visible in the admin, so the second video shows that part.
+
+The demo video covers both flows in one recording:
+
+1. **Normal product:** variant selection, quantity, Add to cart (loading state, cart
+   count update), cart, and on to checkout. No order was placed.
+2. **Quote-only product:** price and Add to cart hidden, quote popup, validation,
+   submit, success message and redirect to `/collections/all`.
+3. **Backend:** the new draft order in Shopify admin (tags, note with name, phone
+   and postcode), since draft orders aren't visible on the storefront.
 
 ## What's in the repo
 

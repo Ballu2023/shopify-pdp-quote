@@ -1,0 +1,67 @@
+
+
+{%- liquid
+  assign p = closest.product | default: product
+  assign nutrition = p.metafields.custom.nutrition.value
+  assign fssai = p.metafields.custom.fssai_license.value
+-%}
+
+{%- if nutrition.facts.size > 0 or fssai != blank -%}
+  {{ 'pdp-custom.css' | asset_url | stylesheet_tag }}
+
+  <div class="pdp-nutrition" {{ block.shopify_attributes }}>
+    {%- if nutrition.facts.size > 0 -%}
+      <details class="pdp-nutrition__details" {% if block.settings.open_by_default %}open{% endif %}>
+        <summary class="pdp-nutrition__summary">
+          <span>
+            {{ block.settings.heading | escape }}
+            {%- if nutrition.per != blank -%}
+              <span class="pdp-nutrition__per"> / {{ nutrition.per | escape }}</span>
+            {%- endif -%}
+          </span>
+          <span class="pdp-nutrition__icon" aria-hidden="true"></span>
+        </summary>
+
+        <dl class="pdp-nutrition__grid">
+          {%- for fact in nutrition.facts -%}
+            <div class="pdp-nutrition__item">
+              <dt>{{ fact.label | escape }}</dt>
+              <dd>{{ fact.value | escape }}</dd>
+            </div>
+          {%- endfor -%}
+        </dl>
+      </details>
+    {%- endif -%}
+
+    {%- if fssai != blank -%}
+      <p class="pdp-nutrition__fssai">FSSAI - {{ fssai | escape }}</p>
+    {%- endif -%}
+  </div>
+{%- elsif request.design_mode -%}
+  <p class="pdp-editor-hint" {{ block.shopify_attributes }}>
+    Nutrition info: fill the <code>custom.nutrition</code> or <code>custom.fssai_license</code> metafield on this product.
+  </p>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Nutrition info",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Nutritional information"
+    },
+    {
+      "type": "checkbox",
+      "id": "open_by_default",
+      "label": "Open by default",
+      "default": true
+    }
+  ],
+  "presets": [
+    { "name": "Nutrition info" }
+  ]
+}
+{% endschema %}

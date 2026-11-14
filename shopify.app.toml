@@ -1,0 +1,26 @@
+# App config template. Real values live only on the deploy server, not in this repo.
+# Fill in, then push with: shopify app deploy
+# Learn more: https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "YOUR_CLIENT_ID"
+name = "PDP Quote Requests"
+application_url = "https://your-server.example.com/health"
+embedded = false
+
+[webhooks]
+api_version = "2026-10"
+
+[access_scopes]
+# least privilege: read the variant + metafield, create draft orders, run the app proxy
+scopes = "write_draft_orders,read_products,write_app_proxy"
+optional_scopes = [ ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [ ]
+
+[app_proxy]
+# storefront /apps/quote/*  ->  https://<your server>/proxy/*
+url = "https://your-server.example.com/proxy"
+prefix = "apps"
+subpath = "quote"

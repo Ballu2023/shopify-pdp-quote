@@ -1,0 +1,222 @@
+{% comment %}
+  Gallery style: theme editor controls for Horizon's native product media gallery.
+  Horizon already offers thumbnail position (left/right/bottom),
+  so this only adds what it doesn't: card background, padding, radius, blending,
+  hover zoom and the layout/alignment of the bottom thumbnail row.
+
+  It outputs CSS variables only; the rules live in pdp-custom.css. No Horizon file
+  is edited, so theme updates keep working.
+{% endcomment %}
+
+{%- liquid
+  assign s = block.settings
+
+  if s.show_background
+    assign card_bg = s.background_color
+    assign card_padding = s.image_padding | append: 'px'
+  else
+    assign card_bg = 'transparent'
+    assign card_padding = '0px'
+  endif
+
+  assign blend = 'normal'
+  if s.blend_white and s.show_background
+    assign blend = 'multiply'
+  endif
+
+  assign zoom = '1'
+  if s.hover_zoom
+    assign zoom = '1.04'
+  endif
+
+  # bottom row: equal boxes across the full width, or fixed width boxes that can be aligned
+  if s.thumb_layout == 'fill'
+    assign gaps = s.thumb_columns | minus: 1 | times: s.thumb_gap
+    assign thumb_column = 'calc((100% - ' | append: gaps | append: 'px) / ' | append: s.thumb_columns | append: ')'
+    assign thumb_align = 'start'
+  else
+    assign thumb_column = s.thumb_size | append: 'px'
+    assign thumb_align = s.thumb_alignment
+  endif
+
+  assign thumb_bg = 'transparent'
+  if s.thumb_background
+    assign thumb_bg = s.background_color
+  endif
+-%}
+
+{{ 'pdp-custom.css' | asset_url | stylesheet_tag }}
+
+{% style %}
+  media-gallery {
+    --pdp-g-bg: {{ card_bg }};
+    --pdp-g-pad: {{ card_padding }};
+    --pdp-g-radius: {{ s.corner_radius }}px;
+    --pdp-g-blend: {{ blend }};
+    --pdp-g-zoom: {{ zoom }};
+    --pdp-t-column: {{ thumb_column }};
+    --pdp-t-gap: {{ s.thumb_gap }}px;
+    --pdp-t-align: {{ thumb_align }};
+    --pdp-t-bg: {{ thumb_bg }};
+    --pdp-t-radius: {{ s.thumb_radius }}px;
+    --pdp-t-active: {{ s.active_color }};
+  }
+{% endstyle %}
+
+{%- if request.design_mode -%}
+  <p class="pdp-editor-hint" {{ block.shopify_attributes }}>
+    Gallery style: controls the look of the product images. Hidden on the storefront.
+  </p>
+{%- else -%}
+  <span hidden {{ block.shopify_attributes }}></span>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Gallery style",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Styles the product images. Thumbnail position (left / right / bottom) is set in the Product media block."
+    },
+    {
+      "type": "header",
+      "content": "Image card"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_background",
+      "label": "Show background card",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "default": "#FDF4EC",
+      "visible_if": "{{ block.settings.show_background }}"
+    },
+    {
+      "type": "range",
+      "id": "image_padding",
+      "label": "Space around image",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 48,
+      "visible_if": "{{ block.settings.show_background }}"
+    },
+    {
+      "type": "range",
+      "id": "corner_radius",
+      "label": "Corner radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "checkbox",
+      "id": "blend_white",
+      "label": "Blend white image backgrounds",
+      "info": "Makes white product photos sit naturally on the card color",
+      "default": true,
+      "visible_if": "{{ block.settings.show_background }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "hover_zoom",
+      "label": "Zoom slightly on hover",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Thumbnails"
+    },
+    {
+      "type": "paragraph",
+      "content": "Layout and alignment apply when thumbnails are below the image."
+    },
+    {
+      "type": "select",
+      "id": "thumb_layout",
+      "label": "Layout",
+      "options": [
+        { "value": "fixed", "label": "Fixed size" },
+        { "value": "fill", "label": "Fill width" }
+      ],
+      "default": "fixed"
+    },
+    {
+      "type": "range",
+      "id": "thumb_size",
+      "label": "Thumbnail size",
+      "min": 56,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 88,
+      "visible_if": "{{ block.settings.thumb_layout == 'fixed' }}"
+    },
+    {
+      "type": "range",
+      "id": "thumb_columns",
+      "label": "Thumbnails per row",
+      "min": 3,
+      "max": 8,
+      "step": 1,
+      "default": 6,
+      "visible_if": "{{ block.settings.thumb_layout == 'fill' }}"
+    },
+    {
+      "type": "select",
+      "id": "thumb_alignment",
+      "label": "Alignment",
+      "options": [
+        { "value": "start", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "end", "label": "Right" }
+      ],
+      "default": "start",
+      "visible_if": "{{ block.settings.thumb_layout == 'fixed' }}"
+    },
+    {
+      "type": "range",
+      "id": "thumb_gap",
+      "label": "Gap",
+      "min": 4,
+      "max": 24,
+      "step": 2,
+      "unit": "px",
+      "default": 12
+    },
+    {
+      "type": "range",
+      "id": "thumb_radius",
+      "label": "Corner radius",
+      "min": 0,
+      "max": 24,
+      "step": 2,
+      "unit": "px",
+      "default": 14
+    },
+    {
+      "type": "checkbox",
+      "id": "thumb_background",
+      "label": "Use card color behind thumbnails",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "active_color",
+      "label": "Selected thumbnail border",
+      "default": "#E5672A"
+    }
+  ],
+  "presets": [
+    { "name": "Gallery style" }
+  ]
+}
+{% endschema %}

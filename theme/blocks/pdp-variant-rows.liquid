@@ -1,0 +1,150 @@
+
+
+{%- liquid
+  assign p = closest.product | default: product
+  assign current_variant = p.selected_or_first_available_variant
+
+  assign quote_only = false
+  if p.metafields.custom.for_sale.value == false
+    assign quote_only = true
+  endif
+-%}
+
+{{ 'pdp-custom.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'pdp-custom.js' | asset_url }}" type="module"></script>
+
+<pdp-variants
+  id="PdpVariants-{{ block.id }}"
+  class="pdp-variants"
+  data-quote-only="{{ quote_only }}"
+  {{ block.shopify_attributes }}
+>
+  {%- if block.settings.heading != blank -%}
+    <p class="pdp-variants__heading" aria-hidden="true">{{ block.settings.heading | escape }}</p>
+  {%- endif -%}
+
+  <fieldset class="pdp-variants__list">
+    <legend class="visually-hidden">{{ p.options.first | default: 'Options' }}</legend>
+
+    {%- for variant in p.variants -%}
+      {%- liquid
+        assign row_image = variant.featured_image | default: p.featured_image
+
+        assign max_qty = ''
+        if variant.inventory_management == 'shopify' and variant.inventory_policy == 'deny'
+          assign max_qty = variant.inventory_quantity
+        endif
+
+        assign low_stock = false
+        if variant.inventory_management == 'shopify' and variant.inventory_quantity > 0 and variant.inventory_quantity <= block.settings.low_stock_threshold
+          assign low_stock = true
+        endif
+      -%}
+
+      <div
+        class="pdp-variant{% unless variant.available %} is-sold-out{% endunless %}"
+        data-variant-id="{{ variant.id }}"
+        data-max="{{ max_qty }}"
+        data-qty="0"
+      >
+        <label class="pdp-variant__select">
+          <input
+            type="radio"
+            class="visually-hidden"
+            name="pdp-variant-{{ block.id }}"
+            value="{{ variant.id }}"
+            data-variant-radio
+            {% if variant.id == current_variant.id %}checked{% endif %}
+          >
+
+          <span class="pdp-variant__thumb">
+            {%- if row_image -%}
+              {{ row_image | image_url: width: 120 | image_tag: loading: 'lazy', alt: '' }}
+            {%- endif -%}
+          </span>
+
+          <span class="pdp-variant__info">
+            {%- unless quote_only -%}
+              <span class="pdp-variant__price">
+                {{ variant.price | money }}
+                {%- if variant.compare_at_price > variant.price -%}
+                  <s class="pdp-variant__compare">{{ variant.compare_at_price | money }}</s>
+                {%- endif -%}
+              </span>
+            {%- endunless -%}
+
+            {%- unless p.has_only_default_variant -%}
+              <span class="pdp-variant__title">{{ variant.title | escape }}</span>
+            {%- endunless -%}
+
+            {%- if variant.available == false -%}
+              <span class="pdp-variant__stock pdp-variant__stock--out">{{ 'products.product.sold_out' | t }}</span>
+            {%- elsif low_stock -%}
+              <span class="pdp-variant__stock">Only {{ variant.inventory_quantity }} left</span>
+            {%- endif -%}
+          </span>
+        </label>
+
+        {%- unless quote_only -%}
+          <div class="pdp-variant__action">
+            <form action="{{ routes.cart_add_url }}" method="post" data-add-form>
+              <input type="hidden" name="id" value="{{ variant.id }}">
+              <input type="hidden" name="quantity" value="1">
+              <button type="submit" class="pdp-add" data-add {% unless variant.available %}disabled{% endunless %}>
+                {%- if variant.available -%}
+                  {{ block.settings.add_label | escape }}
+                {%- else -%}
+                  {{ 'products.product.sold_out' | t }}
+                {%- endif -%}
+              </button>
+            </form>
+
+            <div class="pdp-stepper" data-stepper hidden>
+              <button type="button" class="pdp-stepper__btn" data-decrease aria-label="Remove one {{ variant.title | escape }}">
+                &minus;
+              </button>
+              <span class="pdp-stepper__qty" data-qty aria-live="polite">0</span>
+              <button type="button" class="pdp-stepper__btn" data-increase aria-label="Add one more {{ variant.title | escape }}">
+                +
+              </button>
+            </div>
+          </div>
+        {%- endunless -%}
+      </div>
+    {%- endfor -%}
+  </fieldset>
+
+  <p class="pdp-variants__error" data-error role="alert" hidden></p>
+</pdp-variants>
+
+{% schema %}
+{
+  "name": "Variant rows",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Choose your pack"
+    },
+    {
+      "type": "text",
+      "id": "add_label",
+      "label": "Add button label",
+      "default": "Add"
+    },
+    {
+      "type": "range",
+      "id": "low_stock_threshold",
+      "label": "Show \"Only X left\" at or below",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "default": 5
+    }
+  ],
+  "presets": [
+    { "name": "Variant rows" }
+  ]
+}
+{% endschema %}

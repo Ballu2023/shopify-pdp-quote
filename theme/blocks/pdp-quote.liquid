@@ -1,0 +1,191 @@
+
+
+{%- liquid
+  assign p = closest.product | default: product
+  assign current_variant = p.selected_or_first_available_variant
+  assign redirect_url = block.settings.redirect_url | default: routes.all_products_collection_url
+
+  assign quote_only = false
+  if p.metafields.custom.for_sale.value == false
+    assign quote_only = true
+  endif
+-%}
+
+{%- if quote_only -%}
+  {{ 'pdp-custom.css' | asset_url | stylesheet_tag }}
+  <script src="{{ 'pdp-custom.js' | asset_url }}" type="module"></script>
+
+  <pdp-quote
+    class="pdp-quote"
+    data-endpoint="/apps/quote/request"
+    data-redirect-url="{{ redirect_url }}"
+    data-redirect-delay="{{ block.settings.redirect_delay }}"
+    {{ block.shopify_attributes }}
+  >
+    {%- if block.settings.note != blank -%}
+      <p class="pdp-quote__note">{{ block.settings.note | escape }}</p>
+    {%- endif -%}
+
+    <button type="button" class="pdp-quote__open" data-open aria-haspopup="dialog">
+      {{ block.settings.button_label | escape }}
+    </button>
+
+    <dialog class="pdp-quote__dialog" aria-labelledby="QuoteTitle-{{ block.id }}">
+      <div class="pdp-quote__panel">
+        <div class="pdp-quote__header">
+          <h2 id="QuoteTitle-{{ block.id }}" class="pdp-quote__title">{{ block.settings.heading | escape }}</h2>
+          <button type="button" class="pdp-quote__close" data-close aria-label="Close">&times;</button>
+        </div>
+
+        <form class="pdp-quote__form" data-form novalidate>
+          <p class="pdp-quote__product">{{ p.title | escape }}</p>
+
+          <div class="pdp-quote__row">
+            {%- if p.has_only_default_variant -%}
+              <input type="hidden" name="variantId" value="{{ current_variant.id }}">
+            {%- else -%}
+              <div class="pdp-quote__field">
+                <label for="QuoteVariant-{{ block.id }}">{{ p.options.first | default: 'Option' }}</label>
+                <select id="QuoteVariant-{{ block.id }}" name="variantId">
+                  {%- for variant in p.variants -%}
+                    <option value="{{ variant.id }}" {% if variant.id == current_variant.id %}selected{% endif %}>
+                      {{ variant.title | escape }}
+                    </option>
+                  {%- endfor -%}
+                </select>
+                <p class="pdp-quote__error" data-error-for="variantId"></p>
+              </div>
+            {%- endif -%}
+
+            <div class="pdp-quote__field pdp-quote__field--qty">
+              <label for="QuoteQty-{{ block.id }}">Quantity</label>
+              <input id="QuoteQty-{{ block.id }}" type="number" name="quantity" value="1" min="1" max="100" inputmode="numeric" required>
+              <p class="pdp-quote__error" data-error-for="quantity"></p>
+            </div>
+          </div>
+
+          <div class="pdp-quote__field">
+            <label for="QuoteName-{{ block.id }}">Full name</label>
+            <input id="QuoteName-{{ block.id }}" type="text" name="name" autocomplete="name" maxlength="80" required>
+            <p class="pdp-quote__error" data-error-for="name"></p>
+          </div>
+
+          <div class="pdp-quote__row">
+            <div class="pdp-quote__field">
+              <label for="QuoteEmail-{{ block.id }}">Email</label>
+              <input id="QuoteEmail-{{ block.id }}" type="email" name="email" autocomplete="email" required>
+              <p class="pdp-quote__error" data-error-for="email"></p>
+            </div>
+
+            <div class="pdp-quote__field">
+              <label for="QuotePhone-{{ block.id }}">Mobile</label>
+              <input id="QuotePhone-{{ block.id }}" type="tel" name="phone" autocomplete="tel" inputmode="tel" required>
+              <p class="pdp-quote__error" data-error-for="phone"></p>
+            </div>
+          </div>
+
+          <div class="pdp-quote__field">
+            <label for="QuotePostcode-{{ block.id }}">Postcode</label>
+            <input id="QuotePostcode-{{ block.id }}" type="text" name="postcode" autocomplete="postal-code" inputmode="numeric" maxlength="10" required>
+            <p class="pdp-quote__error" data-error-for="postcode"></p>
+          </div>
+
+          {%- comment -%} honeypot: hidden from people, bots fill it {%- endcomment -%}
+          <div class="pdp-quote__hp" aria-hidden="true">
+            <label for="QuoteWebsite-{{ block.id }}">Website</label>
+            <input id="QuoteWebsite-{{ block.id }}" type="text" name="website" tabindex="-1" autocomplete="off">
+          </div>
+
+          <p class="pdp-quote__message" data-message role="alert" hidden></p>
+
+          <button type="submit" class="pdp-quote__submit" data-submit>
+            <span>{{ block.settings.submit_label | escape }}</span>
+          </button>
+        </form>
+
+        <div class="pdp-quote__success" data-success hidden>
+          <span class="pdp-quote__success-icon" aria-hidden="true">&check;</span>
+          <h3 class="pdp-quote__success-title">{{ block.settings.success_heading | escape }}</h3>
+          <p class="pdp-quote__success-text" data-success-text></p>
+          <p class="pdp-quote__countdown" data-countdown aria-live="polite" hidden></p>
+          <div class="pdp-quote__success-actions">
+            <a class="pdp-quote__open" href="{{ redirect_url }}">{{ block.settings.continue_label | escape }}</a>
+            <button type="button" class="pdp-quote__secondary" data-close>Stay on this page</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+  </pdp-quote>
+{%- elsif request.design_mode -%}
+  <p class="pdp-editor-hint" {{ block.shopify_attributes }}>
+    Quote button appears only on products where the <code>For sale</code> metafield is set to False.
+  </p>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Quote request",
+  "settings": [
+    {
+      "type": "textarea",
+      "id": "note",
+      "label": "Text above button",
+      "default": "This product is available on request. Share your details and we'll send you a quote."
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label",
+      "default": "Request a quote"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Popup heading",
+      "default": "Request a quote"
+    },
+    {
+      "type": "text",
+      "id": "submit_label",
+      "label": "Submit button label",
+      "default": "Send request"
+    },
+    {
+      "type": "header",
+      "content": "After the request is sent"
+    },
+    {
+      "type": "text",
+      "id": "success_heading",
+      "label": "Success heading",
+      "default": "Request sent"
+    },
+    {
+      "type": "text",
+      "id": "continue_label",
+      "label": "Continue button label",
+      "default": "Continue shopping"
+    },
+    {
+      "type": "url",
+      "id": "redirect_url",
+      "label": "Send shoppers to",
+      "info": "Defaults to all products"
+    },
+    {
+      "type": "range",
+      "id": "redirect_delay",
+      "label": "Redirect after",
+      "min": 0,
+      "max": 10,
+      "step": 1,
+      "unit": "s",
+      "default": 3,
+      "info": "0 = don't redirect automatically"
+    }
+  ],
+  "presets": [
+    { "name": "Quote request" }
+  ]
+}
+{% endschema %}
